@@ -15,6 +15,7 @@
  */
 package org.springframework.security.oauth2.client.authentication;
 
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationExchangeUtils;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationExchange;
@@ -45,7 +46,8 @@ final class OAuth2AuthorizationExchangeValidator {
 			throw new OAuth2AuthorizationException(oauth2Error);
 		}
 
-		if (!authorizationResponse.getRedirectUri().equals(authorizationRequest.getRedirectUri())) {
+		boolean validRedirect = OAuth2AuthorizationExchangeUtils.isValidRedirectUri(authorizationRequest, authorizationResponse);
+		if (!validRedirect) {
 			OAuth2Error oauth2Error = new OAuth2Error(INVALID_REDIRECT_URI_PARAMETER_ERROR_CODE);
 			throw new OAuth2AuthorizationException(oauth2Error);
 		}

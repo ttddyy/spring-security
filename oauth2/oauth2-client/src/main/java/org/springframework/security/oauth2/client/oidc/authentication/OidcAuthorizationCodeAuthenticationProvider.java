@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationExchangeUtils;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -126,7 +127,7 @@ public class OidcAuthorizationCodeAuthenticationProvider implements Authenticati
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
 
-		if (!authorizationResponse.getRedirectUri().equals(authorizationRequest.getRedirectUri())) {
+		if (!OAuth2AuthorizationExchangeUtils.isValidRedirectUri(authorizationRequest, authorizationResponse)) {
 			OAuth2Error oauth2Error = new OAuth2Error(INVALID_REDIRECT_URI_PARAMETER_ERROR_CODE);
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}

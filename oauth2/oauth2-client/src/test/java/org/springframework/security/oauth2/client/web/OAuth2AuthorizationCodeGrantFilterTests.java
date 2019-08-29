@@ -362,13 +362,77 @@ public class OAuth2AuthorizationCodeGrantFilterTests {
 		assertThat(authorizedClients.values().iterator().next()).isSameAs(authorizedClient);
 	}
 
+	@Test
+	public void doFilterWhenAuthorizationResponseSuccessThenRedirectUrlHasQueryParameter() throws Exception {
+		String requestUri = "/callback/client-1";
+		String redirectUri = "http://localhost/callback/client-1?paramA=FOO&paramB=BAR";
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", requestUri);
+
+		request.setServletPath(requestUri);
+		request.addParameter(OAuth2ParameterNames.CODE, "code");
+		request.addParameter(OAuth2ParameterNames.STATE, "state");
+		request.addParameter("paramA", "FOO");
+		request.addParameter("paramB", "BAR");
+		request.setQueryString("code=code&state=state&paramA=FOO&paramB=BAR");
+
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain filterChain = mock(FilterChain.class);
+
+		this.setUpAuthorizationRequest(request, response, redirectUri, this.registration1);
+		this.setUpAuthenticationResult(this.registration1);
+
+		this.filter.doFilter(request, response, filterChain);
+
+		assertThat(response.getRedirectedUrl()).isEqualTo(redirectUri);
+
+		// when multiple parameters are available in request
+		request = new MockHttpServletRequest("GET", requestUri);
+		request.setServletPath(requestUri);
+		request.addParameter(OAuth2ParameterNames.CODE, "code");
+		request.addParameter(OAuth2ParameterNames.STATE, "state");
+		request.addParameter("paramA", "FOO", "BAR", "BAZ");
+		request.addParameter("paramB", "FOO", "BAR", "BAZ");
+
+		this.filter.doFilter(request, response, filterChain);
+		assertThat(response.getRedirectedUrl()).isEqualTo(redirectUri);
+	}
+
+	@Test
+	public void doFilterWhenRequestUriNotHaveRedirectParameterThenNotProcessed() throws Exception {
+		String requestUri = "/callback/client-1";
+		String redirectUri = "http://localhost/callback/client-1?param=BAR";
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", requestUri);
+
+		request.setServletPath(requestUri);
+		request.addParameter(OAuth2ParameterNames.CODE, "code");
+		request.addParameter(OAuth2ParameterNames.STATE, "state");
+		request.addParameter("param", "FOO", "BAZ");
+
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain filterChain = mock(FilterChain.class);
+
+		this.setUpAuthorizationRequest(request, response, redirectUri, this.registration1);
+		this.setUpAuthenticationResult(this.registration1);
+
+		this.filter.doFilter(request, response, filterChain);
+
+		verify(filterChain).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+	}
+
+
 	private void setUpAuthorizationRequest(HttpServletRequest request, HttpServletResponse response,
 											ClientRegistration registration) {
+		String redirectUri = request.getRequestURL().toString();
+		setUpAuthorizationRequest(request, response, redirectUri, registration);
+	}
+
+	private void setUpAuthorizationRequest(HttpServletRequest request, HttpServletResponse response,
+			String redirectUri, ClientRegistration registration) {
 		Map<String, Object> additionalParameters = new HashMap<>();
 		additionalParameters.put(OAuth2ParameterNames.REGISTRATION_ID, registration.getRegistrationId());
 		OAuth2AuthorizationRequest authorizationRequest = request()
 				.additionalParameters(additionalParameters)
-				.redirectUri(request.getRequestURL().toString()).build();
+				.redirectUri(redirectUri).build();
 		this.authorizationRequestRepository.saveAuthorizationRequest(authorizationRequest, request, response);
 	}
 

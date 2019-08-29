@@ -148,8 +148,10 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 		String requestUrl = UrlUtils.buildFullRequestUrl(request.getScheme(), request.getServerName(),
 				request.getServerPort(), request.getRequestURI(), null);
 		MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
-		if (requestUrl.equals(authorizationRequest.getRedirectUri()) &&
-				OAuth2AuthorizationResponseUtils.isAuthorizationResponse(params)) {
+
+		if (OAuth2AuthorizationResponseUtils.isAuthorizationResponse(params)
+				&& OAuth2AuthorizationExchangeUtils.isValidRedirectUri(
+						authorizationRequest.getRedirectUri(), requestUrl, params)) {
 			return true;
 		}
 		return false;
@@ -166,7 +168,8 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 
 		MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
 		String redirectUri = UriComponentsBuilder.fromHttpUrl(UrlUtils.buildFullRequestUrl(request))
-				.replaceQuery(null)
+				.replaceQueryParam(OAuth2ParameterNames.CODE)
+				.replaceQueryParam(OAuth2ParameterNames.STATE)
 				.build()
 				.toUriString();
 		OAuth2AuthorizationResponse authorizationResponse = OAuth2AuthorizationResponseUtils.convert(params, redirectUri);
